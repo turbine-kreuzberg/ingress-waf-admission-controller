@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress-waf-test
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ingress-waf-webhook-available
+  namespace: kube-system
+spec:
+  containers:
+    - name: await
+      image: ghcr.io/utopia-planitia/kubectl-image:v1.24.3
+      command:
+        - bash
+        - -c
+      args:
+        - |
+          set -e
+          set -u
+          set -o pipefail
+          set -x
+          rm -f /tmp/available
+          until curl -k --max-time 10 --fail https://ingress-waf.kube-system.svc.cluster.local:9443/healthz; do
+            echo "webhook not available yet"
+            sleep 5
+          done
+          sleep 5
+          touch /tmp/available
+          sleep infinity
+      readinessProbe:
+        exec:
+          command:
+          - test
+          - -f
+          - /tmp/available
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ingress-waf-labels-exists
+spec:
+  containers:
+    - name: test
+      image: ghcr.io/utopia-planitia/kubectl-image:v1.24.3
+      command:
+        - bash
+        - -c
+      args:
+        - |
+          set -e
+          set -u
+          set -o pipefail
+          set -x
+          kubectl delete ingress test --ignore-not-found=true --wait=true
+          kubectl create ingress test --rule=foo.com/bar=svc1:8080
+          kubectl get ingress test -o yaml
+          [[ "$(kubectl get ingress test -o jsonpath='{.metadata.annotations.nginx\.ingress\.kubernetes\.io\/enable-modsecurity}')" == "true" ]]
+          [[ "$(kubectl get ingress test -o jsonpath='{.metadata.annotations.nginx\.ingress\.kubernetes\.io\/enable-owasp-core-rules}')" == "true" ]] 
+          [[ "$(kubectl get ingress test -o jsonpath='{.metadata.annotations.nginx\.ingress\.kubernetes\.io\/modsecurity-snippet}')" == "SecRuleEngine On" ]]
+          [[ "$(kubectl get ingress test -o jsonpath='{.metadata.annotations.nginx\.ingress\.kubernetes\.io\/modsecurity-transaction-id}')" == "\$request_id" ]]
+          echo done
+          sleep infinity
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: ingress-waf-tester
+subjects:
+  - kind: ServiceAccount
+    name: default
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io

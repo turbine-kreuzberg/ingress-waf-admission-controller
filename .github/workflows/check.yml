@@ -1,0 +1,89 @@
+name: Execute automated checks
+on:
+  - push
+jobs:
+# https://github.com/golangci/golangci-lint-action#how-to-use
+  lint:
+    name: Lint go code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout git repo
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3
+      - name: Lint go code with golangci-lint
+        uses: golangci/golangci-lint-action@537aa1903e5d359d0b27dbc19ddd22c5087f3fbc # tag=v3
+        with:
+          # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
+          version: v1.47.0
+          args: --timeout=5m
+  test:
+    name: Verify go test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout git repo
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3
+      - name: Setup golang
+        uses: actions/setup-go@84cbf8094393cdc5fe1fe1671ff2647332956b1a # tag=v3
+        with:
+          go-version: '1.18.0'
+      - name: Print go version
+        run: go version
+      - name: Execute go tests 
+        run: go test -v ./...
+  tilt-ci-dev:
+    name: Verify tilt ci (development images)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout git repo
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3
+      - name: Create k8s Kind Cluster
+        uses: helm/kind-action@d08cf6ff1575077dee99962540d77ce91c62387d # tag=v1.3.0
+      - name: Install tilt & helm
+        uses: yokawasa/action-setup-kube-tools@f7f73d7965074b0f5491b7210ff51e3254d42058 # tag=v0.8.2
+        with:
+          setup-tools: |
+            tilt
+            helm
+          tilt: 'v0.30.5'
+          helm: 'v3.6.3'
+      - name: Install helmfile
+        run: |
+          curl --fail -L -s --max-time 60 -o /usr/local/bin/helmfile https://github.com/roboll/helmfile/releases/download/v0.140.0/helmfile_linux_amd64
+          chmod +x /usr/local/bin/helmfile
+      - name: Install helm diff
+        run: |
+          helm plugin install https://github.com/databus23/helm-diff
+      - name: Install dependencies
+        run: |
+          helmfile sync
+      - name: Verify tilt ci
+        run: |
+          timeout 600 tilt ci
+  tilt-ci-prod:
+    name: Verify tilt ci (production images)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout git repo
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # tag=v3
+      - name: Create k8s Kind Cluster
+        uses: helm/kind-action@d08cf6ff1575077dee99962540d77ce91c62387d # tag=v1.3.0
+      - name: Install tilt cli
+        uses: yokawasa/action-setup-kube-tools@f7f73d7965074b0f5491b7210ff51e3254d42058 # tag=v0.8.2
+        with:
+          setup-tools: |
+            tilt
+            helm
+          tilt: 'v0.30.5'
+          helm: 'v3.6.3'
+      - name: Install helmfile
+        run: |
+          curl --fail -L -s --max-time 60 -o /usr/local/bin/helmfile https://github.com/roboll/helmfile/releases/download/v0.140.0/helmfile_linux_amd64
+          chmod +x /usr/local/bin/helmfile
+      - name: Install helm diff
+        run: |
+          helm plugin install https://github.com/databus23/helm-diff
+      - name: Install dependencies
+        run: |
+          helmfile sync
+      - name: Verify tilt ci
+        run: |
+          PROD=1 timeout 600 tilt ci

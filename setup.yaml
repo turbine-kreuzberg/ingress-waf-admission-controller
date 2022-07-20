@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingress-waf-admission-controller
+  namespace: kube-system
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: ingress-waf-admission-controller
+  template:
+    metadata:
+      labels:
+        app: ingress-waf-admission-controller
+    spec:
+      containers:
+      - name: webhook
+        image: ghcr.io/damoon/ingress-waf-admission-controller:latest
+        ports:
+        - name: metrics
+          containerPort: 8080
+        - name: webhook
+          containerPort: 9443
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 9443
+            scheme: HTTPS
+        volumeMounts:
+        - name: certs
+          mountPath: "/tmp/k8s-webhook-server/serving-certs/"
+          readOnly: true
+      volumes:
+      - name: certs
+        secret:
+          secretName: ingress-waf-certificate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingress-waf
+  namespace: kube-system
+spec:
+  selector:
+    app: ingress-waf-admission-controller
+  ports:
+    - name: metrics
+      protocol: TCP
+      port: 8080
+    - name: webhook
+      protocol: TCP
+      port: 9443
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: ingress-waf
+  labels:
+    app: ingress-waf
+  annotations:
+    cert-manager.io/inject-ca-from: kube-system/ingress-waf-certificate
+webhooks:
+  - name: ingress-waf.kube-system.svc.cluster.local
+    rules:
+      - operations: ["CREATE"]
+        apiGroups: ["networking.k8s.io"]
+        apiVersions: ["v1"]
+        resources: ["ingresses"]
+        scope: "Namespaced"
+    clientConfig:
+      service:
+        name: ingress-waf
+        namespace: kube-system
+        path: "/webhook"
+        port: 9443
+    admissionReviewVersions: ["v1", "v1beta1"]
+    sideEffects: None
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ingress-waf-certificate
+  namespace: kube-system
+spec:
+  secretName: ingress-waf-certificate
+  dnsNames:
+  - ingress-waf.kube-system.svc
+  issuerRef:
+    name: ingress-waf-selfsign-issues
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: ingress-waf-selfsign-issues
+  namespace: kube-system
+spec:
+  selfSigned: {}
