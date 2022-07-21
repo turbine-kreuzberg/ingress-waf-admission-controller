@@ -16,7 +16,7 @@ spec:
           set -o pipefail
           set -x
           rm -f /tmp/available
-          until curl -k --max-time 10 --fail https://ingress-waf.kube-system.svc.cluster.local:9443/healthz; do
+          until curl -k --max-time 10 --fail https://ingress-waf.nginx-ingress.svc.cluster.local:9443/healthz; do
             echo "webhook not available yet"
             sleep 5
           done
