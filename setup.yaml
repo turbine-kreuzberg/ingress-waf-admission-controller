@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ingress-waf-admission-controller
-  namespace: kube-system
+  namespace: nginx-ingress
 spec:
   strategy:
     type: Recreate
@@ -40,7 +40,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ingress-waf
-  namespace: kube-system
+  namespace: nginx-ingress
 spec:
   selector:
     app: ingress-waf-admission-controller
@@ -59,9 +59,9 @@ metadata:
   labels:
     app: ingress-waf
   annotations:
-    cert-manager.io/inject-ca-from: kube-system/ingress-waf-certificate
+    cert-manager.io/inject-ca-from: nginx-ingress/ingress-waf-certificate
 webhooks:
-  - name: ingress-waf.kube-system.svc.cluster.local
+  - name: ingress-waf.nginx-ingress.svc.cluster.local
     rules:
       - operations: ["CREATE", "UPDATE"]
         apiGroups: ["networking.k8s.io"]
@@ -71,7 +71,7 @@ webhooks:
     clientConfig:
       service:
         name: ingress-waf
-        namespace: kube-system
+        namespace: nginx-ingress
         path: "/webhook"
         port: 9443
     admissionReviewVersions: ["v1", "v1beta1"]
@@ -81,11 +81,11 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: ingress-waf-certificate
-  namespace: kube-system
+  namespace: nginx-ingress
 spec:
   secretName: ingress-waf-certificate
   dnsNames:
-  - ingress-waf.kube-system.svc
+  - ingress-waf.nginx-ingress.svc
   issuerRef:
     name: ingress-waf-selfsign-issues
 ---
@@ -93,6 +93,6 @@ apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
   name: ingress-waf-selfsign-issues
-  namespace: kube-system
+  namespace: nginx-ingress
 spec:
   selfSigned: {}
