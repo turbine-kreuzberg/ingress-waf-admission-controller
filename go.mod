@@ -1,4 +1,4 @@
-module github.com/damoon/ingress-waf-admission-controller
+module github.com/turbine-kreuzberg/ingress-waf-admission-controller
 
 go 1.18
 

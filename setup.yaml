@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: webhook
-        image: ghcr.io/damoon/ingress-waf-admission-controller:latest
+        image: ghcr.io/turbine-kreuzberg/ingress-waf-admission-controller:latest
         ports:
         - name: metrics
           containerPort: 8080

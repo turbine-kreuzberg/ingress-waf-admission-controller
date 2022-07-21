@@ -29,7 +29,7 @@ if os.environ.get('PROD', '') ==  '':
   ]
 
 docker_build(
-  ref='ghcr.io/damoon/ingress-waf-admission-controller:latest',
+  ref='ghcr.io/turbine-kreuzberg/ingress-waf-admission-controller:latest',
   context='.',
   dockerfile='./Dockerfile',
   live_update=live_update,
