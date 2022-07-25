@@ -52,7 +52,8 @@ spec:
           kubectl get ingress test -o yaml
           [[ "$(kubectl get ingress test -o jsonpath='{.metadata.annotations.nginx\.ingress\.kubernetes\.io\/enable-modsecurity}')" == "true" ]]
           [[ "$(kubectl get ingress test -o jsonpath='{.metadata.annotations.nginx\.ingress\.kubernetes\.io\/enable-owasp-core-rules}')" == "true" ]] 
-          [[ "$(kubectl get ingress test -o jsonpath='{.metadata.annotations.nginx\.ingress\.kubernetes\.io\/modsecurity-snippet}')" == "SecRuleEngine On" ]]
+          [[ "$(kubectl get ingress test -o jsonpath='{.metadata.annotations.nginx\.ingress\.kubernetes\.io\/modsecurity-snippet}')" =~ "SecRuleEngine On" ]]
+          [[ "$(kubectl get ingress test -o jsonpath='{.metadata.annotations.nginx\.ingress\.kubernetes\.io\/modsecurity-snippet}')" =~ "SecAuditLog /dev/stdout" ]]
           [[ "$(kubectl get ingress test -o jsonpath='{.metadata.annotations.nginx\.ingress\.kubernetes\.io\/modsecurity-transaction-id}')" == "\$request_id" ]]
           echo done
           sleep infinity

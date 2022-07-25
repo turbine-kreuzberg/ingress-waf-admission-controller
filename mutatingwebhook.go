@@ -61,6 +61,9 @@ func enableWAF(ingress *networkingv1.Ingress) {
 
 	ingress.Annotations["nginx.ingress.kubernetes.io/enable-modsecurity"] = "true"
 	ingress.Annotations["nginx.ingress.kubernetes.io/enable-owasp-core-rules"] = "true"
-	ingress.Annotations["nginx.ingress.kubernetes.io/modsecurity-snippet"] = "SecRuleEngine On"
+	ingress.Annotations["nginx.ingress.kubernetes.io/modsecurity-snippet"] = `
+SecRuleEngine On
+SecAuditLog /dev/stdout
+`
 	ingress.Annotations["nginx.ingress.kubernetes.io/modsecurity-transaction-id"] = "$request_id"
 }
