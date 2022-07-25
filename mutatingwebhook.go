@@ -44,22 +44,18 @@ func (a *networkHealthSidecarInjector) Handle(ctx context.Context, req admission
 }
 
 func prepare(ingress *networkingv1.Ingress) {
-	if ingress.Labels == nil {
-		ingress.Labels = map[string]string{}
-	}
-
 	if ingress.Annotations == nil {
 		ingress.Annotations = map[string]string{}
 	}
 
-	_, found := ingress.Labels["ingress-waf-enabled"]
+	_, found := ingress.Annotations["ingress-waf-enabled"]
 	if !found {
-		ingress.Labels["ingress-waf-enabled"] = "true"
+		ingress.Annotations["ingress-waf-enabled"] = "true"
 	}
 }
 
 func enableWAF(ingress *networkingv1.Ingress) {
-	if strings.ToLower(ingress.Labels["ingress-waf-enabled"]) != "true" {
+	if strings.ToLower(ingress.Annotations["ingress-waf-enabled"]) != "true" {
 		return
 	}
 
