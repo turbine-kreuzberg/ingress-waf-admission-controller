@@ -20,14 +20,14 @@ The Admission controller adds WAF enabling annotations to all ingresses by defau
 
 ### Disable for a Ingress
 
-Create an ingress and add the annotation `ingress-waf-enabled: "false"`.
+Create an ingress and add the annotation `ingress-waf/enabled: "false"`.
 
 ``` yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
-    ingress-waf-enabled: "false"
+    ingress-waf/enabled: "false"
   name: some-ingress
 spec:
   rules:
