@@ -75,6 +75,7 @@ func enableWAF(ingress *networkingv1.Ingress) error {
 	ingress.Annotations["nginx.ingress.kubernetes.io/modsecurity-snippet"] = `
 SecRuleEngine On
 SecAuditLog /dev/stdout
+SecAuditLogParts ABCFHKZ
 `
 
 	requestBodyLimit, found := ingress.Annotations[AnnotationRequestBodyLimit]
