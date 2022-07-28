@@ -74,8 +74,11 @@ func enableWAF(ingress *networkingv1.Ingress) error {
 	ingress.Annotations["nginx.ingress.kubernetes.io/enable-owasp-core-rules"] = "true"
 	ingress.Annotations["nginx.ingress.kubernetes.io/modsecurity-snippet"] = `
 SecRuleEngine On
+SecAuditEngine RelevantOnly
 SecAuditLog /dev/stdout
-SecAuditLogParts ABCFHKZ
+SecAuditLogParts ABCEFHJZ
+SecAction "id:900110,phase:1,log,pass,t:none,setvar:tx.inbound_anomaly_score_threshold=10"
+SecAction "phase:5,auditlog,log,pass,msg:\'Anomaly Score %{TX.anomaly_score} Threshold %{TX.inbound_anomaly_score_threshold}\'"
 `
 
 	requestBodyLimit, found := ingress.Annotations[AnnotationRequestBodyLimit]
