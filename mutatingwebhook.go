@@ -15,8 +15,10 @@ import (
 
 const (
 	AnnotationEnabled           = "ingress-waf/enabled"
+	AnnotationThreshold         = "ingress-waf/threshold"
 	AnnotationRequestBodyLimit  = "ingress-waf/request-body-limit"
 	AnnotationResponseBodyLimit = "ingress-waf/response-body-limit"
+	AnnotationAdditionalCRS     = "ingress-waf/additional-crs"
 )
 
 type networkHealthSidecarInjector struct {
@@ -63,6 +65,11 @@ func prepare(ingress *networkingv1.Ingress) {
 	if !found {
 		ingress.Annotations[AnnotationEnabled] = "true"
 	}
+
+	_, found = ingress.Annotations[AnnotationThreshold]
+	if !found {
+		ingress.Annotations[AnnotationThreshold] = "5"
+	}
 }
 
 func enableWAF(ingress *networkingv1.Ingress) error {
@@ -70,16 +77,21 @@ func enableWAF(ingress *networkingv1.Ingress) error {
 		return nil
 	}
 
+	threshold := ingress.Annotations[AnnotationThreshold]
+	additionalCRS := ingress.Annotations[AnnotationAdditionalCRS]
+
 	ingress.Annotations["nginx.ingress.kubernetes.io/enable-modsecurity"] = "true"
 	ingress.Annotations["nginx.ingress.kubernetes.io/enable-owasp-core-rules"] = "true"
-	ingress.Annotations["nginx.ingress.kubernetes.io/modsecurity-snippet"] = `
+	ingress.Annotations["nginx.ingress.kubernetes.io/modsecurity-snippet"] = fmt.Sprintf(`
 SecRuleEngine On
 SecAuditEngine RelevantOnly
+SecAuditLogRelevantStatus 403
 SecAuditLog /dev/stdout
-SecAuditLogParts ABCEFHJZ
-SecAction "id:900110,phase:1,log,pass,t:none,setvar:tx.inbound_anomaly_score_threshold=10"
-SecAction "phase:5,auditlog,log,pass,msg:\'Anomaly Score %{TX.anomaly_score} Threshold %{TX.inbound_anomaly_score_threshold}\'"
-`
+SecAuditLogParts ABEFHIJZ
+SecAction "id:900110,phase:1,log,pass,t:none,setvar:tx.inbound_anomaly_score_threshold=%s"
+SecAction "phase:5,auditlog,log,pass,msg:\'Anomaly Score %%{TX.anomaly_score} Threshold %%{TX.inbound_anomaly_score_threshold}\'"
+%s
+`, threshold, additionalCRS)
 
 	requestBodyLimit, found := ingress.Annotations[AnnotationRequestBodyLimit]
 	if found {
