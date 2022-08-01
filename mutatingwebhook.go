@@ -87,7 +87,7 @@ SecRuleEngine On
 SecAuditEngine RelevantOnly
 SecAuditLogRelevantStatus 403
 SecAuditLog /dev/stdout
-SecAuditLogParts ABEFHIJZ
+SecAuditLogParts ABFHZ
 SecAction "id:900110,phase:1,log,pass,t:none,setvar:tx.inbound_anomaly_score_threshold=%s"
 SecAction "phase:5,auditlog,log,pass,msg:\'Anomaly Score %%{TX.anomaly_score} Threshold %%{TX.inbound_anomaly_score_threshold}\'"
 %s
