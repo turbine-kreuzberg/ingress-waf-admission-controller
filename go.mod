@@ -1,6 +1,6 @@
 module github.com/turbine-kreuzberg/ingress-waf-admission-controller
 
-go 1.18
+go 1.19
 
 require (
 	k8s.io/api v0.24.3
