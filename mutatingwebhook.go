@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -80,18 +81,20 @@ func enableWAF(ingress *networkingv1.Ingress) error {
 	threshold := ingress.Annotations[AnnotationThreshold]
 	additionalCRS := ingress.Annotations[AnnotationAdditionalCRS]
 
+	secAuditLog := os.Getenv("SEC_AUDIT_LOG")
+
 	ingress.Annotations["nginx.ingress.kubernetes.io/enable-modsecurity"] = "true"
 	ingress.Annotations["nginx.ingress.kubernetes.io/enable-owasp-core-rules"] = "true"
 	ingress.Annotations["nginx.ingress.kubernetes.io/modsecurity-snippet"] = fmt.Sprintf(`
 SecRuleEngine On
 SecAuditEngine RelevantOnly
 SecAuditLogRelevantStatus 403
-SecAuditLog /dev/stdout
+SecAuditLog %s
 SecAuditLogParts ABFHZ
 SecAction "id:900110,phase:1,log,pass,t:none,setvar:tx.inbound_anomaly_score_threshold=%s"
 SecRule TX:ANOMALY_SCORE "@gt 0" "id:10001,phase:5,auditlog,log,pass,msg:\'Anomaly Score %%{TX.anomaly_score} Threshold %%{TX.inbound_anomaly_score_threshold}\'"
 %s
-`, threshold, additionalCRS)
+`, secAuditLog, threshold, additionalCRS)
 
 	requestBodyLimit, found := ingress.Annotations[AnnotationRequestBodyLimit]
 	if found {
