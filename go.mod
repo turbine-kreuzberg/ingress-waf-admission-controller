@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	k8s.io/api v0.26.1
-	sigs.k8s.io/controller-runtime v0.14.2
+	sigs.k8s.io/controller-runtime v0.14.3
 )
 
 require (
